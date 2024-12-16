@@ -1,20 +1,84 @@
-﻿// ConsoleApplication57.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-//
+﻿#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <regex>
+#include <algorithm>
+using namespace std;
 
-#include <iostream>
+struct measurements {
+	string date;
+	double height;
+	int value;
+};
 
-int main()
-{
-    std::cout << "Hello World!\n";
+measurements parseMeasurement(const string& line) {
+	regex pattern(R"((\d{4}-\d{2}-\d{2})\s+(\d+(?:\.\d+)?)\s+(\d+))");
+	smatch match;
+	measurements measurement;
+
+	if (regex_match(line, match, pattern)) {
+		measurement.date = match[1];
+		measurement.height = stod(match[2]);
+		measurement.value = stoi(match[3]);
+	}
+
+	return measurement;
 }
 
-// Запуск программы: CTRL+F5 или меню "Отладка" > "Запуск без отладки"
-// Отладка программы: F5 или меню "Отладка" > "Запустить отладку"
+void displayMeasurement(const measurements& measurement) {
+	cout << "Дата: " << measurement.date << ", Высота: " << measurement.height << ", Значение: " << measurement.value << endl;
+}
 
-// Советы по началу работы 
-//   1. В окне обозревателя решений можно добавлять файлы и управлять ими.
-//   2. В окне Team Explorer можно подключиться к системе управления версиями.
-//   3. В окне "Выходные данные" можно просматривать выходные данные сборки и другие сообщения.
-//   4. В окне "Список ошибок" можно просматривать ошибки.
-//   5. Последовательно выберите пункты меню "Проект" > "Добавить новый элемент", чтобы создать файлы кода, или "Проект" > "Добавить существующий элемент", чтобы добавить в проект существующие файлы кода.
-//   6. Чтобы снова открыть этот проект позже, выберите пункты меню "Файл" > "Открыть" > "Проект" и выберите SLN-файл.
+bool compareByDate(const measurements& a, const measurements& b) {
+	return a.date < b.date;
+}
+
+int main() {
+	setlocale(LC_ALL, "ru");
+	ifstream inputFile("measurements.txt");
+
+	if (!inputFile) {
+		cerr << "Ошибка открытия файла!" << endl;
+		return 1;
+	}
+
+	vector<measurements> x;
+	string line;
+
+	while (getline(inputFile, line)) {
+		line.erase(0, line.find_first_not_of(" "));
+		line.erase(line.find_last_not_of(" ") + 1);
+		if (line.empty()) continue;
+		measurements measurement = parseMeasurement(line);
+		if (!measurement.date.empty()) {
+			x.push_back(measurement);
+		}
+	}
+
+	inputFile.close();
+
+	// Сортировка по дате
+	sort(x.begin(), x.end(), compareByDate);
+
+	// Вывод всех измерений
+	cout << "Все измерения:" << endl;
+	for (const auto& item : x) {
+		displayMeasurement(item);
+	}
+
+	// Поиск по заданной высоте
+	double targetHeight;
+	cout << "\nВведите высоту для поиска: ";
+	cin >> targetHeight;
+
+	cout << "\nИзмерения с высотой " << targetHeight << ":" << endl;
+	for (const auto& item : x) {
+		if (item.height == targetHeight) {
+			displayMeasurement(item);
+		}
+	}
+
+	return 0;
+}
